@@ -5,7 +5,7 @@ class Product(BaseModel):
     name:str
     price:int
     quantity:int
-    category:str
+    category:int
     description:str
     
     # def __init__(self,id, name, price, quantity, category, description):
