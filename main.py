@@ -66,6 +66,7 @@ def update_prod(id:int,productss:Product, db:Session=Depends(get_db)):
         selected_product.price=productss.price
         selected_product.quantity=productss.quantity
         selected_product.description=productss.description
+        db.commit()
         
         return "product updated successfully"
     
@@ -75,12 +76,16 @@ def update_prod(id:int,productss:Product, db:Session=Depends(get_db)):
         
 
 @obj.delete("/Product")
-def delete_prod(id:int):
-    for i in range(len(products)):
-        if(products[i].id==id):
-            del products[i]
-            return "Products deleted successfully"
+def delete_prod(id:int, db:Session=Depends(get_db)):
+    selected_product=db.query(database_model.Product).filter(database_model.Product.id==id).first()
+    if selected_product:
+        db.delete(selected_product)
+        db.commit()
+        return "Product deleted successfully"
+    else:
+        return "Product id not found"
         
-    return "Product id not found"
+    
+        
         
     
