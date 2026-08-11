@@ -15,3 +15,7 @@ class Product(BaseModel):
     #     self.quantity=quantity
     #     self.category=category
     #     self.description=description
+    
+class User(BaseModel):
+    email:str
+    password:str

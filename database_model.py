@@ -12,3 +12,9 @@ class Product(base):
     description=Column(String)
     
     
+class User(base):
+    __tablename__="User Authentication"
+    email=Column(str, primary_key=True,index= True)
+    password=Column(str)
+    
+    
