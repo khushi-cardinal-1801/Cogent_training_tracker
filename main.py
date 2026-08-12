@@ -4,8 +4,11 @@ from database import session_local, engine
 import database_model
 from sqlalchemy.orm import Session
 obj=FastAPI()
+from auth import router
+from auth import token_verfication
 
 database_model.base.metadata.create_all(bind=engine)
+obj.include_router(router)
 
 @obj.get("/")
 
@@ -37,13 +40,18 @@ init_db()
 
 @obj.get("/products")
 
-def prod_name(db: Session=Depends(get_db)):
-    db_products=db.query(database_model.Product).all()
+def prod_name(page:int=1,
+              limit:int=5,
+              email:str=Depends(token_verfication),
+              db: Session=Depends(get_db)
+              ):
+    skip=(page-1)*limit
+    db_products=db.query(database_model.Product).offset(skip).limit(limit).all()
     return db_products
 
 @obj.get("/product/{id}")
 
-def get_product(id:int, db:Session=Depends(get_db)):
+def get_product(id:int, email:str=Depends(token_verfication), db:Session=Depends(get_db)):
     selected_product=db.query(database_model.Product).filter(database_model.Product.id==id).first()
     if(selected_product):
         return selected_product
@@ -51,14 +59,14 @@ def get_product(id:int, db:Session=Depends(get_db)):
     
 
 @obj.post("/product")
-def app_prod(productss:Product, db:Session=Depends(get_db)):
+def app_prod(productss:Product, email:str=Depends(token_verfication),db:Session=Depends(get_db)):
     db.add(database_model.Product(**productss.model_dump()))
     db.commit()
     return productss
     
     
 @obj.put("/product")
-def update_prod(id:int,productss:Product, db:Session=Depends(get_db)):
+def update_prod(id:int,productss:Product,email:str=Depends(token_verfication), db:Session=Depends(get_db)):
     selected_product=db.query(database_model.Product).filter(database_model.Product.id==id).first()
     if selected_product:
         selected_product.name=productss.name
@@ -76,7 +84,7 @@ def update_prod(id:int,productss:Product, db:Session=Depends(get_db)):
         
 
 @obj.delete("/Product")
-def delete_prod(id:int, db:Session=Depends(get_db)):
+def delete_prod(id:int,email:str=Depends(token_verfication), db:Session=Depends(get_db)):
     selected_product=db.query(database_model.Product).filter(database_model.Product.id==id).first()
     if selected_product:
         db.delete(selected_product)

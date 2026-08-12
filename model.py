@@ -1,10 +1,11 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr, Field, field_validator
+
 
 class Product(BaseModel):
     id:int
     name:str
-    price:int
-    quantity:int
+    price:int=Field(gt=0)
+    quantity:int=Field(gt=0)
     category:int
     description:str
     
@@ -16,6 +17,16 @@ class Product(BaseModel):
     #     self.category=category
     #     self.description=description
     
+    
 class User(BaseModel):
-    email:str
+    email:EmailStr
     password:str
+    
+    @field_validator("password")
+    @classmethod
+    def pass_val(cls,value):
+        if(len(value)<8):
+            raise ValueError("Password should be greater than 7 digits")
+        return value
+    
+        
