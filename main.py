@@ -83,7 +83,7 @@ def update_prod(id:int,productss:Product,email:str=Depends(token_verfication), d
         
         
 
-@obj.delete("/Product")
+@obj.delete("/product")
 def delete_prod(id:int,email:str=Depends(token_verfication), db:Session=Depends(get_db)):
     selected_product=db.query(database_model.Product).filter(database_model.Product.id==id).first()
     if selected_product:
