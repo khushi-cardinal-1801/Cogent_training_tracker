@@ -3,11 +3,26 @@ from model import Product
 from database import session_local, engine
 import database_model
 from sqlalchemy.orm import Session
-obj=FastAPI()
 from auth import router
 from auth import token_verfication
 from redis_client import redis_client
 import json
+from arq import create_pool
+from arq.connections import RedisSettings
+from contextlib import asynccontextmanager
+
+@asynccontextmanager
+async def lisfespan(app:FastAPI):
+    app.state.arq_pool=await create_pool(
+        RedisSettings(
+            host="localhost",
+            port=6379
+        )
+    )
+    yield
+    await app.state.arq_pool.close()
+    
+obj=FastAPI(lifespan=lisfespan)
 
 database_model.base.metadata.create_all(bind=engine)
 obj.include_router(router)
@@ -59,7 +74,7 @@ async def prod_name(page:int=1,
     cached_products=await redis_client.get(cache_key)
     if cached_products:
         print("products is fetching from redis")
-        return {"data from redis: ",json.loads(cached_products)}
+        return {"data from redis: ":json.loads(cached_products)}
     print("getting data from postgres sql")
     
         
@@ -89,7 +104,7 @@ async def get_product(id:int, email:str=Depends(token_verfication), db:Session=D
     cached_product=await redis_client.get(f"product:{id}")
     selected_product=db.query(database_model.Product).filter(database_model.Product.id==id).first()
     if cached_product:
-        return {"product is cache:",json.loads(cached_product)}
+        return {"product is cache:":json.loads(cached_product)}
     elif selected_product:
         if(selected_product):
             product_data={
@@ -124,6 +139,11 @@ async def app_prod(productss:Product, email:str=Depends(token_verfication),db:Se
         "price":new_product.price,
         "description":new_product.description
     }
+    # Send background job to Redis through ARQ
+    await obj.state.arq_pool.enqueue_job(
+        "product_created",
+        product_data
+    )
     await redis_client.set(
         f"product:{product_data['id']}",
         json.dumps(product_data),
